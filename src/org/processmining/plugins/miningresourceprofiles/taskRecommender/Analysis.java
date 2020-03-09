@@ -38,7 +38,6 @@ public class Analysis{
 		return resources;
 	}
 	
-	//TODO
 	public Set<String> getResourcesTaskFilter(XLog log, int minTasks)
 	{
 		Set<String> resources = new HashSet<String>();
@@ -439,7 +438,6 @@ public class Analysis{
 		return r;
 	}
 	
-	//TODO
 		public Set<String> getNewEmployees(Vector<Resource> resourceHistories, InputParametersTR ip, Date logStart)
 		{
 			Set<String> newEmployees = new HashSet<String>();
@@ -1412,7 +1410,6 @@ public class Analysis{
 		
 	*/
 	
-	//TODO
 	public XLog removeEventsWithUnusedResources(XLog log, Vector<Resource> resHistories)
 	{
 		Set<String> resources = new HashSet<String>();
