@@ -23,15 +23,90 @@ public class Analysis{
 	
 	public Analysis() {} 
 	
+	public Boolean isNewActive(Resource r, Date d, Date newD)
+	{
+		Boolean isNewAct = false;
+		Boolean before = false;
+		Boolean after = false;
+		Boolean isNew = true;
+		
+		for(int i=0; i<r.rTimes.size(); i++)
+		{
+			if(r.rTimes.elementAt(i).before(d))
+				before = true;
+			
+			if(r.rTimes.elementAt(i).after(d))
+				after = true;
+			
+			if(r.rTimes.elementAt(i).before(newD))
+				isNew = false;
+		}
+		
+		if(before & after & isNew)
+			isNewAct = true;
+		
+		
+		return isNewAct;
+	}
+	
+	public Boolean isActive(Resource r, Date d)
+	{
+		Boolean isAct = false;
+		Boolean before = false;
+		Boolean after = false;
+		
+		for(int i=0; i<r.rTimes.size(); i++)
+		{
+			if(r.rTimes.elementAt(i).before(d))
+				before = true;
+			
+			if(r.rTimes.elementAt(i).after(d))
+				after = true;
+		}
+		
+		if(before & after)
+			isAct = true;
+		
+		
+		return isAct;
+	}
+	
+	public Boolean isActiveMinPastTasks(Resource r, Date d, Integer minPastTasks)
+	{
+		Boolean isAct = false;
+		Boolean before = false;
+		Boolean after = false;
+		Integer beforeCount = 0;
+		
+		for(int i=0; i<r.rTimes.size(); i++)
+		{
+			if(r.rTimes.elementAt(i).before(d))
+				beforeCount++;
+			
+			if(!(r.rTimes.elementAt(i).before(d)))
+				after = true;
+		}
+		
+		if(beforeCount >= minPastTasks)
+			before = true;
+		
+		if(before & after)
+			isAct = true;
+		
+		
+		return isAct;
+	}
+	
 	public Set<String> getResources(XLog log)
 	{
 		Set<String> resources = new HashSet<String>();
 		for (XTrace t : log) 
 		{
 			for (XEvent event : t) 
-			{
-					if(event.getAttributes().get("org:resource") != null)
-						resources.add(event.getAttributes().get("org:resource").toString());
+			{	//TODO
+					if(event.getAttributes().get("org:resource") != null && event.getAttributes().get("lifecycle:transition") != null)
+						if (event.getAttributes().get("lifecycle:transition").toString().equalsIgnoreCase("complete"))
+							resources.add(event.getAttributes().get("org:resource").toString());
 			}
 		}
 		
@@ -46,8 +121,9 @@ public class Analysis{
 		for (XTrace t : log) 
 		{
 			for (XEvent event : t) 
-			{
-					if(event.getAttributes().get("org:resource") != null && event.getAttributes().get("concept:name") != null)
+			{//TODO
+				if(event.getAttributes().get("org:resource") != null && event.getAttributes().get("concept:name") != null && event.getAttributes().get("lifecycle:transition") != null)
+					if(event.getAttributes().get("lifecycle:transition").toString().equalsIgnoreCase("complete"))
 					{
 						String curRes = event.getAttributes().get("org:resource").toString();
 						String curTask = event.getAttributes().get("concept:name").toString();
@@ -103,9 +179,10 @@ public class Analysis{
 					
 					if(event.getAttributes().get("time:timestamp") != null);
 						currentTime = ((XAttributeTimestamp) event.getAttributes().get("time:timestamp")).getValue();
-					
-			if(currentResource != null && currentTask != null && currentTime != null)
-			{
+			//TODO		
+			if(currentResource != null && currentTask != null && currentTime != null && event.getAttributes().get("lifecycle:transition") != null)
+				if(event.getAttributes().get("lifecycle:transition").toString().equalsIgnoreCase("complete"))
+				{
 				
 				if(currentResource.equals(resource))
 				{
@@ -168,9 +245,10 @@ public class Analysis{
 					
 					if(event.getAttributes().get("time:timestamp") != null);
 						currentTime = ((XAttributeTimestamp) event.getAttributes().get("time:timestamp")).getValue();
-					
-			if(currentResource != null && currentTask != null && currentTime != null)
-			{
+			//TODO		
+			if(currentResource != null && currentTask != null && currentTime != null && event.getAttributes().get("lifecycle:transition") != null)
+				if (event.getAttributes().get("lifecycle:transition").toString().equalsIgnoreCase("complete"))
+				{
 				
 				if(currentResource.equals(resource))
 				{
@@ -368,6 +446,158 @@ public class Analysis{
 				fw.close();
 			 	
 				return file;
+			}
+			
+			//v2.4 
+			public File saveSummaryFirstTaskExtExperiments(Vector<InputParametersTR> ipV, Vector<Measures> mV, String filePath) throws IOException
+			{
+				Vector<String> lines = new Vector<String>();
+				
+				String title = "numResTrain,numResTest,minTasksResFilter,newResDurFilter,timeSplit,minResSim,minSimRes,minTaskSupport,minPastTasks," +
+						"Recommendations,Acc:OneTask,Acc:AllRec,Acc:AllReal,Acc:Intersection\r\n";
+				lines.add(title);
+				
+				for(int i=0; i<ipV.size(); i++)
+				{
+					InputParametersTR ip = ipV.elementAt(i);
+					Measures m = mV.elementAt(i);
+					
+					String line = ip.numResTrain+","+ip.numResTest+","+ip.minTasksResFilter+","+ip.newResDurFilter+","+ip.split+","
+					+ip.minResSimilarity+","+ip.minSimResources+","+ip.minTaskSupport+","+ip.minPastTasks+"," 
+					+m.resPrediction+","+m.performedOnePredTask+","+m.performedAllPredTasks+","+m.recommendedAllRealTasks+","+m.predRealIntersection+"\r\n";
+					lines.add(line);
+				}
+					
+				File file = new File(filePath);
+				FileWriter fw = new FileWriter(file, true);
+			
+				for(int i=0; i<lines.size(); i++)
+					fw.write(lines.elementAt(i));
+				
+				fw.flush();
+				fw.close();
+			 	
+				return file;
+			}
+			
+			
+			public File saveVector(Vector<String> lines, String filePath) throws IOException
+			{
+				File file = new File(filePath);
+				FileWriter fw = new FileWriter(file, true);
+			
+				for(int i=0; i<lines.size(); i++)
+					fw.write(lines.elementAt(i));
+				
+				fw.flush();
+				fw.close();
+			 	
+				return file;
+			}
+			
+			
+			public Vector<String> getAllResourceSequences (Vector<Resource> resources, Map<String,Integer> taskIDs)
+			{
+				Vector<String> sequences = new Vector<String>();
+				
+				for(Resource r:resources)
+				{
+					String rSeq = "";
+					for(int i=0; i<r.rTasks.size(); i++)
+						{
+							rSeq += taskIDs.get(r.rTasks.elementAt(i));
+							rSeq += ",";
+						}
+				
+				System.out.println(r.resourceName);
+				System.out.println(r.rTasks);
+				System.out.println(rSeq);
+				
+				rSeq = rSeq.substring(0, rSeq.length() - 1);
+				rSeq += "\n";
+				
+				sequences.add(rSeq);
+				}
+				
+				return sequences;
+			}
+			
+			// Get sequences before or on time t
+			public Vector<String> getTrainSequences (Vector<Resource> resources, Map<String,Integer> taskIDs, Date splitDate)
+			{
+				Vector<String> sequences = new Vector<String>();
+				
+				for(Resource r:resources)
+				{
+					String rSeq = "";
+					for(int i=0; i<r.rTasks.size(); i++)
+						{
+							if(!r.rTimes.elementAt(i).after(splitDate))
+							{
+								rSeq += taskIDs.get(r.rTasks.elementAt(i));
+								rSeq += ",";
+							}
+							else
+								break;
+						}
+				
+				System.out.println(r.resourceName);
+				System.out.println(r.rTasks);
+				System.out.println(rSeq);
+				
+				if(rSeq.length() > 1)
+				{
+					rSeq = rSeq.substring(0, rSeq.length() - 1);
+					rSeq += "\n";
+					sequences.add(rSeq);
+				}
+				
+				}
+				
+				return sequences;
+			}
+			
+			// get sequences before or on time t + plus next task
+			public Vector<String> getTestSequences (Vector<Resource> resources, Map<String,Integer> taskIDs, Date splitDate)
+			{
+				Vector<String> sequences = new Vector<String>();
+				
+				
+				for(Resource r:resources)
+				{
+					boolean hasNextTask = false;
+					boolean hasPrevTask = false;
+					String rSeq = "";
+					for(int i=0; i<r.rTasks.size(); i++)
+						{
+							if(!r.rTimes.elementAt(i).after(splitDate))
+							{
+								hasPrevTask = true;
+								rSeq += taskIDs.get(r.rTasks.elementAt(i));
+								rSeq += ",";
+							}
+							else
+							{	hasNextTask = true;
+								rSeq += taskIDs.get(r.rTasks.elementAt(i));
+								rSeq += ",";
+								break;
+							}
+						}
+				
+				System.out.println(r.resourceName);
+				System.out.println(r.rTasks);
+				System.out.println(rSeq);
+				
+				if(hasNextTask && hasPrevTask)
+				{
+					rSeq = rSeq.substring(0, rSeq.length() - 1);
+					rSeq += "\n";
+					sequences.add(rSeq);
+				}
+				
+				}
+				
+				return sequences;
 			}
 
 	
